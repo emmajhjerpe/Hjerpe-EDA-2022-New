@@ -1,0 +1,186 @@
+---
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
+ )
+
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+```
+
+# Interactions Between Temperature and Mechanical Disturbance on Zebrafish Embryonic Development
+
+## Author
+
+Emma Hjerpe
+
+## Affiliation
+
+Minnesota State University Moorhead Biosciences Department
+
+## Introduction
+
+Zebrafish are able to sense alarm cue, for example, chemicals released when another fish is attacked by a predator, in order to alert themselves of potential danger. Because of this, their behavior changes as an increase in overall activity as they try and avoid any potential predators nearby. Adult zebrafish have been found to have a significant increase in movement and have been described as "erratic" in trials where alarm has been administered (Speedie and Gerlai, 2008). A similar phenomenon happens with zebrafish eggs, in that they can also sense risk of predation through either chemical alarm cues or mechanical disturbances and hatch early as a response. While hatching early allows the hatchling to relocate and potentially avoid predators, it comes with the trade-off of being underdeveloped compared to those who hatch at a normal time (Wisenden at al., 2022). This study in particular looks at the differences between chemical and mechanical alarm cue as well as the implications they have on development in early life. In crucian carp, it has been found that in the presence of a predator the carp will develop a deeper body depth that will help provide refuge from predation but increase drag (Bronmark and Miner, 1992). In a study conducted on tree frogs, it was found that the eggs can hatch up to 30% early if disturbed by an egg-eating snake, and this has been noted as a behavioral response (Warkentin, 2005). Predator interactions were as well found to occur at lower more sustained vibrational frequencies as opposed to other disturbance events, such as weather occurrences (Warkentin, 2005).
+
+## Methods
+
+Data was collected by Daniel Paulson under supervision of Brian Wisenden. Wild-type zebrafish from EkkWill Water Life Resources, Florida were used in this study. Embryos were collected using a tub of glass marbles for approximately 90 minutes before lights turned on for the day. The embryos were then collected to be used in the trials. There were six 473-mL containers used in these trials. Three were assigned for chemical alarm cue and three were assigned for water control treatments. Eight embryos were subjected to the containers and water temperature was kept at 35C. Treatment was administered at 0800, 1200, 1600, and 2100. Containers were checked at these times subsequent days for hatching. At first three hatchlings, date and time were recorded and larva was imaged using ZEISS Stemi 508 microscope and Zeiss Efficient Navigation (ZEN) software (Wisenden et al., 2022). R Studio was used to derive statistical information from zebrafish data from the Wisenden et al., 2022 study.
+
+## Results
+
+```{r}
+my_data <- read_excel("ZebrafishQuantData_test.xlsx")
+```
+
+```{r}
+zf_data<-rename(my_data, total_length = TL, 
+                yolk_height = YolkHt, tail_length = "Lttailfromtipmsc(mm)", 
+                body_cavity_lenth = BodyCavLen, trunk_total = TrunkTotal, 
+                head_depth = HeadDpth, caudal_fin_height = CaudHt, 
+                trunk_and_fin = "Trunk+Fin", dorsal_fin_height = DorsalFin, 
+                dorsal_fin_length = DorsalFinLen, anal_fin_length = AnalFinLen, eye_height = EyeHt, 
+                eye_length = EyeLen, hatch_time_hours = "hatchtime(hours)", average_velocity = VelAvg, 
+                max_velocity = VelMax, cue_type = W1A2)
+length(zf_data$max_velocity)
+zf_group<-group_by(zf_data, cue_type)
+```
+
+```{r}
+alpha = 0.05
+degrees.freedom = length(zf_data) - 1
+t.score = qt(p=alpha/2, df=degrees.freedom,lower.tail=F)
+print(t.score)
+```
+
+#### Hatch Time
+
+There is a significant difference found in hatch time between hatch time and if alarm cue was used (t = 5.21, df = 74, p \< 0.05). Statistical information was found using R Studio (Figure 1).
+
+```{r}
+alarm_hatch <- c(rnorm(75, mean = 39.88571429, sd = 43.525))
+water_hatch <- c(rnorm(75, mean = 5.875029054, sd = 5.84846024))
+
+t.test(alarm_hatch, water_hatch, paired = TRUE)
+```
+
+#### Total Length
+
+There is a significant difference found between total length of the fish and if alarm cue was used (t = -3.84, df = 74, p \< 0.005). Statistical information was found using R Studio (Figure 2).
+
+```{r}
+alarm_tl <- c(rnorm(75, mean = 3.10E+00, sd = 0.21999453))
+water_tl <- c(rnorm(75, mean = 3.191625, sd = 0.187474947))
+
+t.test(alarm_tl, water_tl, paired = TRUE)
+```
+
+#### Maximum Velocity
+
+There is a significant difference found between maximum velocity and if alarm cue was used (t = 2.13, df = 75, p \< 0.05). Statistical information was used using R Studio (Figure 3).
+
+```{r}
+alarm_tl <- c(rnorm(75, mean = 3.10E+00, sd = 0.21999453))
+water_tl <- c(rnorm(75, mean = 3.191625, sd = 0.187474947))
+
+t.test(alarm_tl, water_tl, paired = TRUE)
+```
+
+```{r}
+ggplot(data = zf_data) +
+  geom_histogram(mapping = aes(x = hatch_time_hours), binwidth = 6,
+                 color = "purple4", fill = "purple4") +
+  facet_wrap(~ cue_type, scales = "free_y") +
+  theme_gray() +
+  labs(
+    x = "Hatch Time (Hours)",
+    y = "Number of Fish",
+  )
+```
+
+> Figure 1. Histogram comparing hatch time in hours with the cue type used.
+
+```{r}
+zf_summary_tl <-
+  summarize(
+    zf_group, 
+    mean_length = mean(total_length),
+    sem_length = sd(total_length) / sqrt(n()),
+    ci_upper_limit = mean_length + t.score * sem_length,
+    ci_lower_limit = mean_length - t.score * sem_length)
+
+ggplot(data = zf_data) +
+  geom_jitter(mapping = aes(x = cue_type, y = total_length, color = hatch_time_hours), width = 0.3) +
+  geom_point(
+    data = zf_summary_tl, 
+    mapping = aes(x = cue_type, y = mean_length, ymax = ci_upper_limit, 
+                  ymin = ci_lower_limit),
+    color = "black", size = 3 ) + scale_color_gradient(low = "purple4", high = "darkorange")+
+  geom_linerange(
+    data = zf_summary_tl, 
+    mapping = aes(x = cue_type, y = mean_length, ymax = ci_upper_limit, 
+                  ymin = ci_lower_limit),
+    color = "black", size = 2) +
+  labs(
+    x = "Cue Type",
+    y = "Total Length",
+    color = "Hatch Time (Hours)"
+  ) +
+  theme_gray()
+```
+
+> Figure 2. Scatterplot showing the relationship between total length with the type of cue used. Hatch time in hours is factored in as a variable as well.
+
+```{r}
+zf_summary_vmax <-
+  summarize(
+    zf_group, 
+    mean_vmax = mean(max_velocity),
+    sem_vmax = sd(max_velocity) / sqrt(n()),
+    ci_upper_limit = mean_vmax + t.score * sem_vmax,
+    ci_lower_limit = mean_vmax - t.score * sem_vmax)
+
+ggplot(data = zf_data) +
+  geom_jitter(mapping = aes(x = cue_type, y = max_velocity, color = hatch_time_hours),
+              width = 0.3, size=2)+
+  geom_point(
+    data = zf_summary_vmax, 
+    mapping = aes(x = cue_type, y = mean_vmax, ymax = ci_upper_limit, 
+                  ymin = ci_lower_limit),
+    color = "black", size = 3)+scale_color_gradient(low = "purple4", high = "darkorange")+
+  geom_linerange(
+    data = zf_summary_vmax, 
+    mapping = aes(x = cue_type, y = mean_vmax, ymax = ci_upper_limit, 
+                  ymin = ci_lower_limit),
+    color = "black", size=2) +
+  labs(
+    x = "Cue Type",
+    y = "Max Velocity",
+    color = "Hatch Time (Hours)"
+  ) +
+  theme_gray()
+```
+
+> Figure 3. Scatterplot showing the relationship between maximum velocity and the cue type used. Hatch time in hours is factored in as a variable as well.
+
+## Discussion
+
+From the trials ran over R Studio, there is a significant difference between alarm cue administered during embryonic development and underdevelopment as a result. This suggests that when subjected to alarm cue, zebrafish can sense that alarm cue and respond to the stimulus by hatching early.
+
+## References
+Brönmark, C. and Miner, J. G. (1992). Predator-induced phenotypical change in body morphology in crucian carp. Science 258, 1348-1350.
+
+Speedie, N. and Gerlai, R. (2008). Alarm substance induced behavioral responses in zebrafish (Danio rerio). Behav Brain Res 188, 168-177.
+
+Warkentin, K. M. (2005). How do embryos assess risk? Vibrational cues in predator-induced hatching of red-eyed treefrogs. Anim Behav 70, 59-71.
+
+Wisenden BD, Paulson\* DC, Orr M. 2022. Zebrafish embryos hatch early in response to chemical and mechanical indicators of predation risk, resulting in under-developed swimming ability of hatchling larvae. Biology Open.
+
+## Acknowledgement
+
+Thank you to Brian Wisenden for data and for overlooking the research for this experiment. Thank you to Chris Merkord for assistance with data analysis.
